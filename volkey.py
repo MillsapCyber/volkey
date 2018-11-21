@@ -6,12 +6,32 @@ import volatility.utils as utils
 import volatility.obj as obj
 import volatility.plugins.taskmods as taskmods
 import volatility.plugins.linux.common as linux_common
+import subprocess as sp
+import re
 from volatility.renderers import TreeGrid
 from volatility.renderers.basic import Address
 
 
 class linux_volkey(linux_common.AbstractLinuxCommand):
     """Gather active tasks by walking the task_struct->task list"""
+
+    def _get_cred_offsets_brute(self, pid):
+        _prof = self._config.PROFILE
+        _loc = self._config.LOCATION[7::]
+        '''return dict containing uid and euid mem locations '''
+        cmd = 'echo \"cc(pid='+str(pid)+'); dt(\\\"cred\\\",proc().cred)\" | python vol.py --profile='+str(_prof)+' -f '+str(_loc)+' linux_volshell'
+        res = sp.check_output(cmd,shell=True)
+        rtn = {}
+        rtn['pid'] = str(pid)
+        u = re.compile('\\b\uid\\b')
+        e = re.compile('\\b\euid\\b')
+        for line in res.split('\n'):
+            if u.search(line):
+                rtn['uid'] = line.split()[3]
+            if e.search(line):
+                rtn['euid'] = line.split()[3]
+        return rtn
+
 
     def __init__(self, config, *args, **kwargs):
         linux_common.AbstractLinuxCommand.__init__(self, config, *args, **kwargs)
@@ -105,6 +125,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                        Address(dtb),
                        start_time])
 
+
     def render_text(self, outfd, data):
         self.table_header(outfd, [("Offset", "[addrpad]"),
                                   ("Name", "20"),
@@ -126,3 +147,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                                str(gid),
                                dtb,
                                str(start_time))
+                print(self._get_cred_offsets_brute(task.pid))
+
+
+	
