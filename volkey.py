@@ -19,7 +19,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         _prof = self._config.PROFILE
         _loc = self._config.LOCATION[7::]
         '''return dict containing uid and euid mem locations '''
-        cmd = 'echo \"cc(pid='+str(pid)+'); dt(\\\"cred\\\",proc().cred)\" | python vol.py --profile='+str(_prof)+' -f '+str(_loc)+' linux_volshell'
+        cmd = 'printf \"cc(pid={pid}); dt(\\\"cred\\\",proc().cred)\" | python vol.py --profile={prof} -f {loc} linux_volshell'.format(pid=pid, prof=_prof,loc=_loc)
         res = sp.check_output(cmd,shell=True)
         rtn = {}
         rtn['pid'] = str(pid)
