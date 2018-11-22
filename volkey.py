@@ -25,11 +25,28 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         rtn['pid'] = str(pid)
         u = re.compile('\\b\uid\\b')
         e = re.compile('\\b\euid\\b')
+        g = re.compile('\\b\gid\\b')
         for line in res.split('\n'):
             if u.search(line):
                 rtn['uid'] = line.split()[3]
             if e.search(line):
                 rtn['euid'] = line.split()[3]
+            if g.search(line):
+                rtn['gid'] = line.split()[3]
+        return rtn
+
+    def _overwrite_UIDs(self,IDs):
+        uid = IDs['uid']
+        euid = IDs['euid']
+        pid = IDs['pid']
+        gid = IDs['gid']
+        _prof = self._config.PROFILE
+        _loc = self._config.LOCATION[7::]
+        zeros = '\\x00\\x00\\x00\\x00'
+        cmd = 'printf \"Yes, I want to enable write support\nself._addrspace.write({uid},\'{zeros}\'); self._addrspace.write({euid},\'{zeros}\'); self._addrspace.write({gid},\'{zeros}\')\" | python vol.py --profile={prof} -f {loc} linux_volshell --write'.format(uid=uid,zeros=zeros,euid=euid, prof=_prof,loc=_loc, pid=pid, gid=gid)
+        res = sp.check_output(cmd,shell=True)
+        print res
+        rtn = True
         return rtn
 
 
@@ -147,7 +164,8 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                                str(gid),
                                dtb,
                                str(start_time))
-                print(self._get_cred_offsets_brute(task.pid))
+                vals = self._get_cred_offsets_brute(task.pid)
+                success = self._overwrite_UIDs(vals)
 
 
 	
