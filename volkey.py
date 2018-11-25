@@ -14,6 +14,7 @@ from subprocess import Popen, PIPE
 import shlex
 
 
+
 class linux_volkey(linux_common.AbstractLinuxCommand):
     """Gather active tasks by walking the task_struct->task list"""
     def run(self, cmd):
@@ -42,28 +43,33 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         _prof = self._config.PROFILE
         _loc = self._config.LOCATION[7::]
         '''return dict containing uid and euid mem locations '''
-
         cmd = 'echo \"cc(pid='+str(pid)+'); dt(\\\"cred\\\",proc().cred)\" | python vol.py --profile='+str(_prof)+' -f '+str(_loc)+' linux_volshell'
+        cmd = cmd.replace("%20", "\\ ")
+        print cmd
         output = ""
         err = ""
         exit_code = ""
         output, err, exit_code = self.run(cmd)
 
         if exit_code != 0:
-          print "Output:"
-          print output
-          print "Error:"
-          print err
+            print "Output:"
+            print output
+            print "Error:"
+            print err
         # Handle error here
         else:
         # Be happy :D
+            print "Output:"
             print output
+            print "Error:"
+            print err
         res = output
         rtn = {}
         rtn['pid'] = str(pid)
         u = re.compile('\\b\uid\\b')
         e = re.compile('\\b\euid\\b')
         g = re.compile('\\b\gid\\b')
+        print(res)
         for line in res.split('\n'):
             if u.search(line):
                 rtn['uid'] = line.split()[3]
@@ -81,7 +87,10 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         _prof = self._config.PROFILE
         _loc = self._config.LOCATION[7::]
         zeros = '\\x00\\x00\\x00\\x00'
-        cmd = 'echo \"Yes, I want to enable write support\nself._addrspace.write({uid},\'{zeros}\'); self._addrspace.write({euid},\'{zeros}\'); self._addrspace.write({gid},\'{zeros}\')\" | python ~/volatility/vol.py --profile={prof} -f {loc} linux_volshell --write'.format(uid=uid,zeros=zeros,euid=euid, prof=_prof,loc=_loc, pid=pid, gid=gid)
+        cmd = 'echo \"Yes, I want to enable write support\nself._addrspace.write({uid},\'{zeros}\'); self._addrspace.write({euid},\'{zeros}\'); self._addrspace.write({gid},\'{zeros}\')\" | python vol.py --profile={prof} -f {loc} linux_volshell --write'.format(uid=uid,zeros=zeros,euid=euid, prof=_prof,loc=_loc, pid=pid, gid=gid)
+        cmd = cmd.replace("%20", "\\ ")
+
+        print cmd
         output, err, exit_code = self.run(cmd)
 
         if exit_code != 0:
@@ -94,7 +103,6 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         # Be happy :D
             print output
         res = output
-        print(res)
         rtn = True
         return rtn
 
@@ -213,6 +221,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                                dtb,
                                str(start_time))
                 vals = self._get_cred_offsets_brute(task.pid)
+                print vals
                 success = self._overwrite_UIDs(vals)
 
 
