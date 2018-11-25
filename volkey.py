@@ -10,17 +10,55 @@ import subprocess as sp
 import re
 from volatility.renderers import TreeGrid
 from volatility.renderers.basic import Address
+from subprocess import Popen, PIPE
+import shlex
 
 
 class linux_volkey(linux_common.AbstractLinuxCommand):
     """Gather active tasks by walking the task_struct->task list"""
+    def run(self, cmd):
+        """Runs the given command locally and returns the output, err and exit_code."""
+        if "|" in cmd:      
+            cmd_parts = cmd.split('|')
+        else:
+            cmd_parts = []
+            cmd_parts.append(cmd)
+        i = 0
+        p = {}
+        for cmd_part in cmd_parts:
+            cmd_part = cmd_part.strip()
+            if i == 0:
+                p[i]=Popen(shlex.split(cmd_part),stdin=None, stdout=PIPE, stderr=PIPE)
+            else:
+                p[i]=Popen(shlex.split(cmd_part),stdin=p[i-1].stdout, stdout=PIPE, stderr=PIPE)
+            i = i +1
+        (output, err) = p[i-1].communicate()
+        exit_code = p[0].wait()
+
+        return str(output), str(err), exit_code
+
 
     def _get_cred_offsets_brute(self, pid):
         _prof = self._config.PROFILE
         _loc = self._config.LOCATION[7::]
         '''return dict containing uid and euid mem locations '''
+
         cmd = 'echo \"cc(pid='+str(pid)+'); dt(\\\"cred\\\",proc().cred)\" | python vol.py --profile='+str(_prof)+' -f '+str(_loc)+' linux_volshell'
-        res = sp.check_output(cmd,shell=True)
+        output = ""
+        err = ""
+        exit_code = ""
+        output, err, exit_code = self.run(cmd)
+
+        if exit_code != 0:
+          print "Output:"
+          print output
+          print "Error:"
+          print err
+        # Handle error here
+        else:
+        # Be happy :D
+            print output
+        res = output
         rtn = {}
         rtn['pid'] = str(pid)
         u = re.compile('\\b\uid\\b')
@@ -31,6 +69,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
             if e.search(line):
                 rtn['euid'] = line.split()[3]
         return rtn
+
 
 
     def __init__(self, config, *args, **kwargs):
@@ -150,4 +189,4 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                 print(self._get_cred_offsets_brute(task.pid))
 
 
-	
+  
