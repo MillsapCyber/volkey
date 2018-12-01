@@ -14,7 +14,7 @@ from subprocess import Popen, PIPE
 import shlex
 import os
 
-charReaderFlag = True
+charReaderFlag = False#True
 try:
     import readchar
 except ImportError, e:
@@ -86,10 +86,14 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         return rtn
 
     def _overwrite_UIDs(self,IDs):
-        uid = IDs['uid']
-        euid = IDs['euid']
-        pid = IDs['pid']
-        gid = IDs['gid']
+        try:
+            uid = IDs['uid']
+            euid = IDs['euid']
+            pid = IDs['pid']
+            gid = IDs['gid']
+        except:
+            print("Fatal Error: failed to find Mem location of ID values")
+            sys.exit(2)
         _prof = self._config.PROFILE
         _loc = self._config.LOCATION[7::]
         zeros = '\\x00\\x00\\x00\\x00'
