@@ -13,6 +13,11 @@ from volatility.renderers.basic import Address
 from subprocess import Popen, PIPE
 import shlex
 import os
+try:
+    import readchar
+except ImportError, e:
+    import pip
+    pip.main(['install', package])
 
 
 class linux_volkey(linux_common.AbstractLinuxCommand):
@@ -240,12 +245,10 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
 
     def readIn(self,validSelec):
         while(1):
-            temp = str(input('--> '))
+            temp = readchar.readkey()
             if len(temp) ==1: #this will ignore special keys that require >1 byte (arrow keys, modifiers,ect.)
                 if temp in validSelec:
                     return temp
-                else:
-                    print("Input not valid option\n")
         print("fatal flaw on read")
         sys.exit(2) #error code 2 for standard input error code                                                                                    
     def render_text(self, outfd, data):
