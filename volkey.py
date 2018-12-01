@@ -52,9 +52,9 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         _prof = self._config.PROFILE
         _loc = self._config.LOCATION[7::]
         '''return dict containing uid and euid mem locations '''
-        cmd = 'echo \"cc(pid='+str(pid)+'); dt(\\\"cred\\\",proc().cred)\" | python vol.py --profile='+str(_prof)+' -f '+str(_loc)+' linux_volshell'
+        cmd = 'echo \"cc(pid='+str(pid)+'); dt(\\\"cred\\\",proc().cred)\" | python '+sys.argv[0]+' --profile='+str(_prof)+' -f '+str(_loc)+' linux_volshell'
         cmd = cmd.replace("%20", "\\ ")
-        # print cmd
+        print cmd
         output = ""
         err = ""
         exit_code = ""
@@ -93,10 +93,10 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         _prof = self._config.PROFILE
         _loc = self._config.LOCATION[7::]
         zeros = '\\x00\\x00\\x00\\x00'
-        cmd = 'echo \"Yes, I want to enable write support\nself._addrspace.write({uid},\'{zeros}\'); self._addrspace.write({euid},\'{zeros}\'); self._addrspace.write({gid},\'{zeros}\')\" | python vol.py --profile={prof} -f {loc} linux_volshell --write'.format(uid=uid,zeros=zeros,euid=euid, prof=_prof,loc=_loc, pid=pid, gid=gid)
+        cmd = 'echo \"Yes, I want to enable write support\nself._addrspace.write({uid},\'{zeros}\'); self._addrspace.write({euid},\'{zeros}\'); self._addrspace.write({gid},\'{zeros}\')\" | python {arg} --profile={prof} -f {loc} linux_volshell --write'.format(uid=uid,zeros=zeros,euid=euid, prof=_prof,loc=_loc, pid=pid, gid=gid,arg=sys.argv[0])
         cmd = cmd.replace("%20", "\\ ")
 
-        # print cmd
+        print cmd
         output, err, exit_code = self.run(cmd)
 
         if exit_code != 0:
