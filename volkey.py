@@ -13,11 +13,17 @@ from volatility.renderers.basic import Address
 from subprocess import Popen, PIPE
 import shlex
 import os
+
+charReaderFlag = True
 try:
     import readchar
 except ImportError, e:
-    import pip
-    pip.main(['install', package])
+    try:
+        import pip
+        pip.main(['install', package])
+    except:
+        charReaderFlag = False
+        print("Using antiquated menu. Please install the readchar package for a better experience")
 
 
 class linux_volkey(linux_common.AbstractLinuxCommand):
@@ -245,7 +251,14 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
 
     def readIn(self,validSelec):
         while(1):
-            temp = readchar.readkey()
+            if(charReaderFlag == True):
+                temp = readchar.readkey()
+            else:
+                try:
+                    temp = str(input("--> "))
+                except:
+                    print("input is invalid")
+                    continue
             if len(temp) ==1: #this will ignore special keys that require >1 byte (arrow keys, modifiers,ect.)
                 if temp in validSelec:
                     return temp
