@@ -54,7 +54,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         '''return dict containing uid and euid mem locations '''
         cmd = 'echo \"cc(pid='+str(pid)+'); dt(\\\"cred\\\",proc().cred)\" | python '+sys.argv[0]+' --profile='+str(_prof)+' -f '+str(_loc)+' linux_volshell'
         cmd = cmd.replace("%20", "\\ ")
-        print cmd
+        #print cmd
         output = ""
         err = ""
         exit_code = ""
@@ -100,7 +100,7 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         cmd = 'echo \"Yes, I want to enable write support\nself._addrspace.write({uid},\'{zeros}\'); self._addrspace.write({euid},\'{zeros}\'); self._addrspace.write({gid},\'{zeros}\')\" | python {arg} --profile={prof} -f {loc} linux_volshell --write'.format(uid=uid,zeros=zeros,euid=euid, prof=_prof,loc=_loc, pid=pid, gid=gid,arg=sys.argv[0])
         cmd = cmd.replace("%20", "\\ ")
 
-        print cmd
+        #print cmd
         output, err, exit_code = self.run(cmd)
 
         if exit_code != 0:
