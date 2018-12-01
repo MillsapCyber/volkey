@@ -1,4 +1,3 @@
 #!/bin/bash
-apt update
-apt install john -y
-unshadow /etc/passwd /etc/shadow > crackMe.txt
+echo "Place your own malicious code here."
+echo "You didn't think we were going to do all the work for you? Right?"
